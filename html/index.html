@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>nCollab Chat Demo</title>
+  <script src="https://cdn.socket.io/4.7.1/socket.io.min.js"></script>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #f4f6f8;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 600px;
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
+      overflow: hidden;
+    }
+
+    header {
+      background: #3498db;
+      color: white;
+      text-align: center;
+      padding: 15px;
+      font-size: 1.3rem;
+      font-weight: bold;
+    }
+
+    #connectSection {
+      padding: 20px;
+      text-align: center;
+    }
+
+    input, button {
+      padding: 10px;
+      font-size: 1rem;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+    }
+
+    input:focus {
+      outline: none;
+      border-color: #3498db;
+    }
+
+    button {
+      background: #3498db;
+      color: white;
+      border: none;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+
+    button:hover {
+      background: #2980b9;
+    }
+
+    #chatContainer {
+      display: none;
+      padding: 20px;
+      background: #fafafa;
+    }
+
+    #messages {
+      list-style-type: none;
+      padding: 0;
+      margin: 0 0 20px 0;
+      max-height: 300px;
+      overflow-y: auto;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      background: white;
+    }
+
+    #messages li {
+      margin: 8px;
+      padding: 10px;
+      border-radius: 6px;
+      max-width: 70%;
+      clear: both;
+      word-wrap: break-word;
+    }
+
+    .sent {
+      background: #d1ecf1;
+      float: right;
+      text-align: right;
+    }
+
+    .received {
+      background: #f8d7da;
+      float: left;
+      text-align: left;
+    }
+
+    .messageForm {
+      display: flex;
+      gap: 8px;
+    }
+
+    .messageForm input {
+      flex: 1;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>💬 nCollab Chat Demo</header>
+
+    <div id="connectSection">
+      <input type="text" id="userId" placeholder="Enter your User ID" />
+      <button id="connectBtn">Connect</button>
+    </div>
+
+    <div id="chatContainer">
+      <ul id="messages"></ul>
+
+      <div class="messageForm">
+        <input type="text" id="toUser" placeholder="To User ID" />
+        <input type="text" id="messageInput" placeholder="Type a message..." />
+        <button id="sendBtn">Send</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let socket;
+    let currentUser;
+
+    document.getElementById('connectBtn').addEventListener('click', () => {
+      const userId = document.getElementById('userId').value.trim();
+      if (!userId) {
+        alert('Please enter a User ID');
+        return;
+      }
+      currentUser = userId;
+
+      socket = io('http://localhost:3000', {
+        query: { userId }
+      });
+
+      document.getElementById('connectSection').style.display = 'none';
+      document.getElementById('chatContainer').style.display = 'block';
+
+      socket.on('connect', () => {
+        console.log('✅ Connected:', socket.id);
+      });
+
+      socket.on('message', (msg) => {
+        try {
+          const { from, message } = JSON.parse(msg);
+          addMessage(message, from === currentUser ? 'sent' : 'received');
+        } catch {
+          addMessage(msg, 'received');
+        }
+      });
+
+      socket.on('disconnect', () => {
+        console.log('❌ Disconnected from server');
+      });
+    });
+
+    document.getElementById('sendBtn').addEventListener('click', () => {
+      const msgInput = document.getElementById('messageInput');
+      const toUserInput = document.getElementById('toUser');
+      const message = msgInput.value.trim();
+      const toUserId = toUserInput.value.trim();
+
+      if (message && socket) {
+        const payload = { from: currentUser, toUserId, message };
+        socket.emit('chat message', JSON.stringify(payload));
+        addMessage(message, 'sent');
+        msgInput.value = '';
+      }
+    });
+
+    function addMessage(text, type) {
+      const li = document.createElement('li');
+      li.textContent = text;
+      li.className = type;
+      document.getElementById('messages').appendChild(li);
+      document.getElementById('messages').scrollTop = document.getElementById('messages').scrollHeight;
+    }
+  </script>
+</body>
+</html>
