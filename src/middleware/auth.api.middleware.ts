@@ -6,6 +6,7 @@ export default {
   validate: (req:Request, res: Response, next: NextFunction) => {
      // Simple auth middleware for demo purposes
     const authHeader = req.headers.authorization;
+    console.log('Auth Header:', authHeader);
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       throw new Error('Authorization header missing or malformed', { cause: 401 });
     }
@@ -18,7 +19,7 @@ export default {
       type DecodedTokenType = { userId: string; name: string; iat?: number; exp?: number };
       const decoded = JWT.verify(token, EnvData.JWT_KEY) as DecodedTokenType;
       (req as any).user = decoded; // Attach user info to request object
-      next();
+      return next();
     } catch (err) {
       throw new Error('Invalid or expired token', { cause: 401 });
     }

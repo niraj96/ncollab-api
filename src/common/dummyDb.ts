@@ -15,7 +15,7 @@ type saveUserType = Omit<userType, 'id'>;
 type chatCategory = 'personal' | 'group' | 'channel' | 'broadcast';
 type chatType = {
   kind: chatCategory;
-  id: string;
+  id?: string;
   fromUserId: string;
   toUserId: string;
   message: string;
@@ -111,6 +111,8 @@ class InMemoryDB implements DummyDB<userType, chatType> {
   }
 
   saveCHat(chat: chatType): void {
+
+    chat.id = uuidv4();
     this.chats.push(chat);
     this.saveFile();
   }

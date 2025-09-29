@@ -1,7 +1,7 @@
 import { Router, Request, Response, NextFunction } from "express";
 import {ApiResponse} from "../types/response";
 import { loginUserRequest, registerUserRequest, loginResponse } from "../types/user";
-import dbInstance from "../common/dummyDb";
+import dbInstance, { userType } from "../common/dummyDb";
 import JWT from  "../common/jwt";
 import EnvData from "../common/env";
 import authMiddleware from "../middleware/auth.api.middleware";
@@ -83,41 +83,8 @@ userRouter.post("/register", (req: Request, res: Response, next:NextFunction) =>
 
 
 //private route  below - requires authentication
-userRouter.use(authMiddleware.validate);
 
-userRouter.get("/:id", (req: Request, res: Response, next:NextFunction) => {
-
-    try{
-        const userId: string = req?.params?.id as string;
-        if(!userId){
-            throw new Error("User ID is required", { cause: 400 });
-        }
-
-        const user = dbInstance.getUserById(userId);
-        if(!user){
-            throw new Error("User not found", { cause: 404 });
-        }
-
-        const result: ApiResponse<typeof user, null> = {
-          code: 200,
-          success: true,
-          data: user,
-          message: "User fetched successfully",
-          error: null,
-          meta: null
-        };
-
-        return res.status(result.code).json(result);
-
-    }catch(err){
-      next(err);
-    }
-  const userId = req.params.id;
-  // Fetch user by ID
-  res.send(`User details for ID: ${userId}`);
-});
-
-userRouter.get("/users", (req: Request, res: Response, next:NextFunction) => {
+userRouter.get("/available", authMiddleware.validate, (req: Request, res: Response, next:NextFunction) => {
 
     try{
         const users = dbInstance.getAllUsers();
@@ -138,6 +105,82 @@ userRouter.get("/users", (req: Request, res: Response, next:NextFunction) => {
     }
   // Fetch all users
   //res.send("List of all users");
+});
+
+userRouter.get("/users", authMiddleware.validate, (req: Request, res: Response, next:NextFunction) => {
+
+    try{
+        const users = dbInstance.getAllUsers();
+
+        const result: ApiResponse<typeof users, null> = {
+          code: 200,
+          success: true,
+          data: users,
+          message: "Users fetched successfully",
+          error: null,
+          meta: null
+        };
+
+        return res.status(result.code).json(result);
+
+    }catch(err){
+      next(err);
+    }
+  // Fetch all users
+  //res.send("List of all users");
+});
+
+userRouter.get("/profile", authMiddleware.validate, (req: Request, res: Response, next:NextFunction) => {
+
+    try{
+       
+        const user = (req as any).user as userType;
+        console.log('Authenticated user:', user);
+        if(!user){
+            throw new Error("User not found", { cause: 404 });
+        }
+
+        const result: ApiResponse<typeof user, null> = {
+          code: 200,
+          success: true,
+          data: user,
+          message: "User fetched successfully",
+          error: null,
+          meta: null
+        };
+
+        return res.status(result.code).json(result);
+
+    }catch(err){
+      next(err);
+    }
+});
+
+userRouter.get("/:id", authMiddleware.validate, (req: Request, res: Response, next:NextFunction) => {
+
+    try{
+       
+        const userId: string = req.params.id as string;
+        const user = dbInstance.getUserById(userId);
+        console.log('Authenticated user:', user);
+        if(!user){
+            throw new Error("User not found", { cause: 404 });
+        }
+
+        const result: ApiResponse<typeof user, null> = {
+          code: 200,
+          success: true,
+          data: user,
+          message: "User fetched successfully",
+          error: null,
+          meta: null
+        };
+
+        return res.status(result.code).json(result);
+
+    }catch(err){
+      next(err);
+    }
 });
 
 export default userRouter;

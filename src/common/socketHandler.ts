@@ -24,7 +24,15 @@ export default class SocketHandler {
     // Example event
     socket.on('chat message', (msg) => {
       console.log(`📩 Message from ${socket.id}:`, msg);
-      this.io.emit('message', msg); // broadcast
+      const {chatId, message} = msg;
+      // Broadcast the message to all clients in the same chat room
+      const toUser = dbInstance.getUserById(chatId);
+      if(toUser?.socketId){
+        this.io.to(toUser.socketId).emit('chat message', { sender: user?.name || 'Unknown', text: message, time: new Date().toISOString() });
+      }
+      //socket.emit('chat message', { sender: user?.name || 'Unknown', text: message, time: new Date().toISOString() });
+      dbInstance.saveCHat({ fromUserId: socket.data.user?.id , toUserId: chatId, message, timestamp: new Date(), kind: 'personal'});
+
     });
 
     socket.on('disconnect', () => {
